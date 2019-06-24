@@ -218,7 +218,7 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      GitHubHelper.commentOnPullRequest(this, 'Pull Request Review Pipeline on ' + getTimeStamp())
+      GitHubHelper.commentOnPullRequest("${GITHUB_API_URL}", Integer.parseInt("${env.CHANGE_ID}"), 'Pull Request Review Pipeline on ' + getTimeStamp())
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
@@ -259,13 +259,18 @@ if( run_pipeline ) {
             } finally {
               def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
               publishIssues issues: [pyLint]
-
-              pullrequestStatus("${env.GITHUB_TOKEN}",
+              GitHubHelper.createCommitStatus(GITHUB_API_URL,
+                                              LAST_COMMIT_SHA,
+                                              stage_status,
+                                              "${env.BUILD_URL}" + "pylint/",
+                                              stage_description,
+                                              'continuous-integration/pylint')
+              /*pullrequestStatus("${env.GITHUB_TOKEN}",
                                 stage_status,
                                 "${env.BUILD_URL}" + "pylint/",
                                 'continuous-integration/pylint',
                                 stage_description,
-                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
+                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")*/
 
             }
           }
