@@ -212,20 +212,7 @@ if( run_pipeline ) {
             secretEnvVar(key: 'KEYCLOAK_AUTH_CLIENT_SECRET', secretName: 'apitest-secrets', secretKey: 'KEYCLOAK_AUTH_CLIENT_SECRET'),
             secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
         ]
-      ),
-      containerTemplate(
-        name: 'nodejs8',
-        image: 'docker-registry.default.svc:5000/openshift/jenkins-slave-nodejs:8',
-        resourceRequestCpu: '1000m',
-        resourceLimitCpu: '2000m',
-        resourceRequestMemory: '2Gi',
-        resourceLimitMemory: '4Gi',
-        workingDir: '/tmp',
-        command: '',
-        args: '${computer.jnlpmac} ${computer.name}',
-        envVars: [
-          secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
-        ]
+      )
       )
     ]
   ){
@@ -352,7 +339,7 @@ if( run_pipeline ) {
       // trigger fronend review pipeline
       //if (buildResult[1]) {
         dir('auth-web') {
-          container('nodejs8') {
+          /*container('nodejs8') {
             try {
               sh '''
                   node -v
@@ -395,7 +382,7 @@ if( run_pipeline ) {
               }
             } catch (Exception e) {
               error('Failure')
-            }
+            }*/
           }
         }
       //}
