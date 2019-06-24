@@ -232,7 +232,7 @@ if( run_pipeline ) {
     node(pod_label) {
       def date = new Date()
 
-      pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST'))
+      pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
 
       // trigger backend review pipeline
       //if (buildResult[2]) {
