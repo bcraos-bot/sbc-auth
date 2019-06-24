@@ -383,8 +383,6 @@ if( run_pipeline ) {
         echo "URL: ${SONARQUBE_URL}"
         echo "PWD: ${SONARQUBE_PWD}"
 
-        def stage_status = 'PENDING'
-        def stage_description = ''
         try {
           // The `sonar-runner` MUST exist in your project and contain a Gradle environment consisting of:
           // - Gradle wrapper script(s)
