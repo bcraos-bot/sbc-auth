@@ -183,17 +183,6 @@ if( !buildResult[0] ) {
 }
 
 if( run_pipeline ) {
-  node {
-    stage('Checkout Source') {
-      echo "Checking out source code from pull request ..."
-      //echo sh(returnStdout: true, script: 'env')
-      checkout scm
-    }
-  }
-
-  def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
-  echo "Last commit sha1: ${LAST_COMMIT_SHA}"
-
   def stage_status = 'PENDING'
   def stage_description = ''
 
@@ -233,6 +222,16 @@ if( run_pipeline ) {
       def date = new Date()
 
       pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
+
+      stage('Checkout Source') {
+        echo "Checking out source code from pull request ..."
+        //echo sh(returnStdout: true, script: 'env')
+        checkout scm
+      }
+
+
+      def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+      echo "Last commit sha1: ${LAST_COMMIT_SHA}"
 
       // trigger backend review pipeline
       //if (buildResult[2]) {
@@ -408,7 +407,14 @@ if( run_pipeline ) {
   ])
   {
     node (nodejs_label) {
-      //checkout scm
+      stage('Checkout Source') {
+        echo "Checking out source code from pull request ..."
+        //echo sh(returnStdout: true, script: 'env')
+        checkout scm
+      }
+
+      def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+      echo "Last commit sha1: ${LAST_COMMIT_SHA}"
 
       dir('auth-web') {
         try {
