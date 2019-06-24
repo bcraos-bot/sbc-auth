@@ -195,7 +195,7 @@ if( run_pipeline ) {
       containerTemplate(
         name: 'python37',
         image: 'docker-registry.default.svc:5000/1rdehl-tools/jenkins-slave-python3:latest',
-        workingDir: '/tmp',
+        //workingDir: '/tmp',
         command: '',
         //args: '${computer.jnlpmac} ${computer.name}',
         envVars: [
@@ -211,8 +211,8 @@ if( run_pipeline ) {
       ),
       containerTemplate(
         name: 'nodejs8',
-        image: '172.50.0.2:5000/openshift/jenkins-slave-nodejs:8',
-        workingDir: '/tmp',
+        image: 'docker-registry.default.svc:5000/openshift/jenkins-slave-nodejs:8',
+        //workingDir: '/tmp',
         command: '',
         args: '${computer.jnlpmac} ${computer.name}',
         envVars: [
