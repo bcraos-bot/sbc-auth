@@ -183,6 +183,19 @@ if( !buildResult[0] ) {
 }
 
 if( run_pipeline ) {
+  node {
+    stage('Checkout Source') {
+      echo "Checking out source code from pull request ..."
+      //echo sh(returnStdout: true, script: 'env')
+      checkout scm
+    }
+  }
+
+  def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+  echo "Last commit sha1: ${LAST_COMMIT_SHA}"
+
+  def stage_status = 'PENDING'
+  def stage_description = ''
 
   // create auth pod to run verification steps
   def pod_label = "auth-pod-${UUID.randomUUID().toString()}"
@@ -217,22 +230,9 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      def dateFormat = new SimpleDateFormat("yyyy-MM-dd HH24:mm")
       def date = new Date()
 
-      pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date)
-
-      stage('Checkout Source') {
-        echo "Checking out source code from pull request ..."
-        echo sh(returnStdout: true, script: 'env')
-        checkout scm
-      }
-
-      def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
-      echo "Last commit sha1: ${LAST_COMMIT_SHA}"
-
-      def stage_status = 'PENDING'
-      def stage_description = ''
+      pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST'))
 
       // trigger backend review pipeline
       //if (buildResult[2]) {
@@ -408,7 +408,8 @@ if( run_pipeline ) {
   ])
   {
     node (nodejs_label) {
-      checkout scm
+      //checkout scm
+
       dir('auth-web') {
         try {
           sh '''
@@ -420,16 +421,40 @@ if( run_pipeline ) {
 
             echo "Unit tests ran, returned ${testResults}"
             if (testResults > 0) {
-              error('Abort')
+              stage_status = 'error'
+              stage_description = 'Unit tests(jest) failed!'
+              currentBuild.result = "FAILURE"
+            } else {
+              stage_status = 'success'
+              stage_description = 'Unit tests(jest) succeeded!'
             }
+
+            pullrequestStatus("${env.GITHUB_TOKEN}",
+                    stage_status,
+                    "",
+                    'continuous-integration/jest',
+                    stage_description,
+                    "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
           }
           stage("Check code quality (lint)") {
             def lintResults = sh(script: "npm run lint:nofix", returnStatus: true)
 
             echo "Linter ran, returned ${lintResults}"
             if (lintResults > 0) {
-              error('Abort')
+              stage_status = 'error'
+              stage_description = 'linter(nodejs) check failed!'
+              currentBuild.result = "FAILURE"
+            } else {
+              stage_status = 'success'
+              stage_description = 'linter(nodejs) check succeeded!'
             }
+
+            pullrequestStatus("${env.GITHUB_TOKEN}",
+                    stage_status,
+                    "",
+                    'continuous-integration/linter(nodejs)',
+                    stage_description,
+                    "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
           }
 
         } catch (Exception e) {
