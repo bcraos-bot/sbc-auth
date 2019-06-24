@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 import java.util.Date
+import java.text.SimpleDateFormat
 
 // Edit your app's name below
 def APP_NAME = 'auth-api'
