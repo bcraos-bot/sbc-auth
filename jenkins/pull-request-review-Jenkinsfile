@@ -172,7 +172,7 @@ def run_pipeline = true
 if( !buildResult[0] ) {
   stage('No changes. Run pipeline?') {
       try {
-        timeout(time: 1, unit: 'DAYS') {
+        timeout(time: 30, unit: 'MINUTES') {
             input message: "Run pipeline?", id: "1234"//, submitter: 'admin'
         }
       } catch (Exception e) {
@@ -232,15 +232,8 @@ if( run_pipeline ) {
     node(pod_label) {
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
-        checkout changelog: false,
-                poll: false,
-                scm: [$class: 'GitSCM',
-                    branches: [[name: "${env.BRANCH_NAME}"]],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [[refspec: "+refs/pull/*:refs/remotes/origin/pull/* +refs/pull/*/head:refs/remotes/origin/pr/*", url: "${REPO_URL}"]]]
-        //echo sh(returnStdout: true, script: 'env')
+        echo sh(returnStdout: true, script: 'env')
+        checkout scm
       }
 
       def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
