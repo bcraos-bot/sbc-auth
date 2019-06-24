@@ -381,8 +381,8 @@ if( run_pipeline ) {
               }
             } catch (Exception e) {
               error('Failure')
-            }*/
-          }
+            }
+          }*/
         }
       //}
 
