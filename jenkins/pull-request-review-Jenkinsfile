@@ -218,7 +218,7 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      //GitHubHelper.commentOnPullRequest(GITHUB_API_URL, Integer.parseInt(env.CHANGE_ID), 'Pull Request Review Pipeline on ' + getTimeStamp())
+      GitHubHelper.commentOnPullRequest(this, 'Pull Request Review Pipeline on ' + getTimeStamp())
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
