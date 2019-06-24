@@ -213,7 +213,6 @@ if( run_pipeline ) {
             secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
         ]
       )
-      )
     ]
   ){
     node(pod_label) {
