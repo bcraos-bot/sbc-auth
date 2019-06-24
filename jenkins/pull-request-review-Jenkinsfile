@@ -218,7 +218,7 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      GitHubHelper.commentOnPullRequest(this, 'Pull Request Review Pipeline on ' + getTimeStamp())
+      pullrequestComment("${GITHUB_TOKEN}", "${env.CHANGE_ID}", 'Pull Request Review Pipeline on ' + getTimeStamp())
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
@@ -227,7 +227,6 @@ if( run_pipeline ) {
       }
 
       def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
-      //def LAST_COMMIT_SHA = GitHubHelper.getPullRequestLastCommitId(this)
       echo "Last commit sha1: ${LAST_COMMIT_SHA}"
 
       def stage_status = 'PENDING'
@@ -259,18 +258,13 @@ if( run_pipeline ) {
             } finally {
               def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
               publishIssues issues: [pyLint]
-              GitHubHelper.createCommitStatus(GITHUB_API_URL,
-                                              LAST_COMMIT_SHA,
-                                              stage_status,
-                                              "${env.BUILD_URL}" + "pylint/",
-                                              stage_description,
-                                              'continuous-integration/pylint')
-              /*pullrequestStatus("${env.GITHUB_TOKEN}",
+
+              pullrequestStatus("${env.GITHUB_TOKEN}",
                                 stage_status,
                                 "${env.BUILD_URL}" + "pylint/",
                                 'continuous-integration/pylint',
                                 stage_description,
-                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")*/
+                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
 
             }
           }
