@@ -1,4 +1,6 @@
 #!/usr/bin/env groovy
+@Library('devops-library') _
+import bcgov.GitHubHelper
 
 // Edit your app's name below
 def APP_NAME = 'auth-api'
@@ -216,13 +218,16 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
+      GitHubHelper.commentOnPullRequest(this, 'Pull Request Review Pipeline on ' + getTimeStamp())
+
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
         echo sh(returnStdout: true, script: 'env')
         checkout scm
       }
 
-      def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+      //def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+      def LAST_COMMIT_SHA = GitHubHelper.getPullRequestLastCommitId(this)
       echo "Last commit sha1: ${LAST_COMMIT_SHA}"
 
       def stage_status = 'PENDING'
@@ -282,8 +287,6 @@ if( run_pipeline ) {
               stage_description = 'Unit tests failed!'
               currentBuild.result = "FAILURE"
             } finally {
-              stash includes: 'pytest.xml,coverage.xml', name: 'coverage'
-
               junit 'pytest.xml'
 
               pullrequestStatus("${env.GITHUB_TOKEN}",
