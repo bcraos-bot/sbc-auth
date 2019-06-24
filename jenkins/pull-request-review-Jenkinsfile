@@ -1,6 +1,5 @@
 #!/usr/bin/env groovy
-@Library('devops-library') _
-import bcgov.GitHubHelper
+import java.util.Date
 
 // Edit your app's name below
 def APP_NAME = 'auth-api'
