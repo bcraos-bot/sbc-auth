@@ -218,7 +218,7 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      GitHubHelper.commentOnPullRequest(GITHUB_API_URL, Integer.parseInt(env.CHANGE_ID), 'Pull Request Review Pipeline on ' + getTimeStamp())
+      //GitHubHelper.commentOnPullRequest(GITHUB_API_URL, Integer.parseInt(env.CHANGE_ID), 'Pull Request Review Pipeline on ' + getTimeStamp())
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
@@ -226,8 +226,8 @@ if( run_pipeline ) {
         checkout scm
       }
 
-      //def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
-      def LAST_COMMIT_SHA = GitHubHelper.getPullRequestLastCommitId(this)
+      def LAST_COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse  HEAD').trim()
+      //def LAST_COMMIT_SHA = GitHubHelper.getPullRequestLastCommitId(this)
       echo "Last commit sha1: ${LAST_COMMIT_SHA}"
 
       def stage_status = 'PENDING'
