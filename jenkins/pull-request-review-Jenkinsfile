@@ -244,7 +244,7 @@ if( run_pipeline ) {
               sh(returnStatus: true,
                  script: "pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint.log")
 
-              stage_status = 'error'
+              stage_status = 'success'
               stage_description = 'Linter(pylint) check successed!'
              } catch (Exception e) {
               echo "EXCEPTION: ${e}"
@@ -268,7 +268,12 @@ if( run_pipeline ) {
           stage('Unit tests(Pytest) & Coverage') {
             echo "testing..."
             try{
-              sh(returnStatus: true, script: "pytest")
+               sh '''
+                #!/bin/bash
+                source /opt/app-root/bin/activate
+                export PYTHONPATH=./src/
+                pytest
+              '''
               stage_status = 'success'
               stage_description = 'Unit tests successed!'
             } catch (Exception e) {
@@ -277,6 +282,8 @@ if( run_pipeline ) {
               stage_description = 'Unit tests failed!'
               currentBuild.result = "FAILURE"
             } finally {
+              stash includes: 'pytest.xml,coverage.xml', name: 'coverage'
+
               junit 'pytest.xml'
 
               pullrequestStatus("${env.GITHUB_TOKEN}",
