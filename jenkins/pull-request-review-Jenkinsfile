@@ -14,7 +14,6 @@ def GITHUB_API_URL='https://api.github.com/repos/pwei1018/sbc-auth'
 
 def FRONTEND_DIRS = ['auth_web']
 def FRONTEND_FILE_TYPES = ['html', 'vue', 'ts', 'js']
-
 def BACKEND_DIRS = ['auth_api']
 def BACKEND_FILE_TYPES = ['py']
 
@@ -189,6 +188,11 @@ if( run_pipeline ) {
   // create auth pod to run verification steps
   def pod_label = "auth-pod-${UUID.randomUUID().toString()}"
 
+  sh'''
+    pwd
+    ls -la
+  '''
+
   // The jenkins-python3nodejs template has been purpose built for supporting SonarQube scanning.
   podTemplate(
     label: pod_label,
@@ -219,6 +223,11 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
+      sh'''
+        pwd
+        ls -la
+      '''
+
       def date = new Date()
 
       pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
@@ -402,11 +411,19 @@ if( run_pipeline ) {
       resourceLimitMemory: '2Gi',
       workingDir: '/tmp/node',
       command: '',
-      args: '${computer.jnlpmac} ${computer.name}'
+      args: '${computer.jnlpmac} ${computer.name}',
+      envVars: [
+        secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
+      ]
     )
   ])
   {
     node (nodejs_label) {
+      sh'''
+        pwd
+        ls -la
+      '''
+
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
         //echo sh(returnStdout: true, script: 'env')
