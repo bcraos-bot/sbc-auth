@@ -6,11 +6,12 @@ import java.text.SimpleDateFormat
 def APP_NAME = 'auth-api'
 def CONTEXT_DIRECTORY = '/'
 
-def REPO_URL='https://github.com/pwei1018/sbc-auth.git'
+def REPO_URL='https://github.com/pwei1018/sbc-auth'
 
 def GITHUB_API_URL='https://api.github.com/repos/pwei1018/sbc-auth'
 
-def ROCKETCHAT_CHANNEL='#registries-auth'
+//def ROCKETCHAT_CHANNEL='#registries-auth'
+def ROCKETCHAT_CHANNEL='@patrick.wei'
 def ROCKETCHAT_DEVELOPER_CHANNEL='#relationship-developers'
 
 def FRONTEND_DIRS = ['auth_web']
@@ -258,16 +259,33 @@ if( run_pipeline ) {
         stage('pylint') {
           echo "pylint checking..."
           try{
-            sh(returnStatus: true,
-                script: "pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint.log")
+            sh 'pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint.log'
 
             stage_status = 'success'
             stage_description = 'Linter(pylint) check successed!'
-            } catch (Exception e) {
-            echo "EXCEPTION: ${e}"
-            stage_status = 'error'
-            stage_description = 'Linter(pylint) check failed!'
-            rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pylint check failed!! " + "${env.BUILD_URL}" + "pylint/")
+            } catch ( pylint_rc ) {
+            // pylint_rc will be of the form
+            // "hudson.AbortException: script returned exit code NN"
+            // where NN is 1-63 and represents bit field;
+            // bits 0-4 indicate lint-ish issues in analyzed code,
+            // bit 5 indicates pylint usage error
+            echo "pylint_rc= \'$pylint_rc\'"
+            String rc = "$pylint_rc"
+            String code = rc.split()[5]
+            echo "Isolated return code string value $code"
+            int value = code.toInteger()
+
+            // catastrophic/crash error returns a 1; else there is a pylint return code
+            int error_bits_code = value & 0x20
+            int lint_bits_code = value & 0x1f
+            echo "pylint error_bits_code=$error_bits_code ; lint_bits_code=$lint_bits_code"
+            if ( (value == 1) || (error_bits_code != 0) ) {
+                currentBuild.result = "FAILURE"
+                stage_status = 'error'
+                stage_description = 'Linter(pylint) check failed!'
+                rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pylint check failed!! " + "${env.BUILD_URL}" + "pylint/")
+            }
+
           } finally {
             def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
             publishIssues issues: [pyLint]
