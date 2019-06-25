@@ -259,8 +259,12 @@ if( run_pipeline ) {
         stage('pylint') {
           echo "pylint checking..."
           try{
-            sh 'pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint.log'
-
+            sh '''
+              #!/bin/bash
+              source /opt/app-root/bin/activate
+              export PYTHONPATH=./src/
+              pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --output-format=parseable > pylint.log
+            '''
             stage_status = 'success'
             stage_description = 'Linter(pylint) check successed!'
             } catch ( pylint_rc ) {
@@ -303,7 +307,7 @@ if( run_pipeline ) {
         stage('Unit tests(pytest) & Coverage') {
           echo "testing..."
           try{
-              sh '''
+            sh '''
               #!/bin/bash
               source /opt/app-root/bin/activate
               export PYTHONPATH=./src/
@@ -399,7 +403,10 @@ if( run_pipeline ) {
                 -Dsonar.projectName='${SONAR_PROJECT_NAME}' \
                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                 -Dsonar.projectBaseDir=${SONAR_PROJECT_BASE_DIR} \
-                -Dsonar.sources=${SONAR_SOURCES}"
+                -Dsonar.sources=${SONAR_SOURCES} \
+                -Dsonar.python.pylint.reportPath=${SONAR_PROJECT_BASE_DIR}/auth-api/pylint.log \
+                -Dsonar.python.xunit.reportPath=${SONAR_PROJECT_BASE_DIR}/auth-api/pytest.xml \
+                -Dsonar.python.coverage.reportPaths=${SONAR_PROJECT_BASE_DIR}/auth-api/coverage.xml"
             )
           }
 
