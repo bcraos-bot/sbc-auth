@@ -231,7 +231,7 @@ if( run_pipeline ) {
 
       pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
 
-      rocketchatComment("${ROCKETCHAT_TOKEN}", "Pull Request (${env.BRANCH_NAME}) Review start on " + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST'))
+      rocketchatComment("${ROCKETCHAT_TOKEN}", "Pull Request (${env.BRANCH_NAME}) Review start on " + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
