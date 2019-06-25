@@ -47,9 +47,10 @@ def pullrequestComment(token, pullRequestUrl, comments) {
 
 def rocketChatComment(token, comments) {
   def payload = JsonOutput.toJson([body: comments])
+  def rocketChatUrl = "https://chat.pathfinder.gov.bc.ca/hooks/" + "${token}"
 
   sh(returnStdout: true,
-     script: "curl -X POST -H 'Content-Type: application/json'  -X POST -d \'${payload}\' \"https://chat.pathfinder.gov.bc.ca/hooks/+${token}/"")
+     script: "curl -X POST -H 'Content-Type: application/json'  -X POST -d \'${payload}\' \"${rocketChatUrl}\"")
 }
 
 // Gets the URL associated to a named route.
