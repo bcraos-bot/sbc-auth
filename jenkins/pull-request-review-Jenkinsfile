@@ -485,7 +485,7 @@ if( run_pipeline ) {
           stage_status = 'error'
           stage_description = 'Sonarqube scan failed!'
           currentBuild.result = "FAILURE"
-          rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review Sonarqube scan failed!! " + "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY})
+          rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review Sonarqube scan failed!! " + "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}")
         } finally {
           pullrequestStatus("${env.GITHUB_TOKEN}",
                     stage_status,
