@@ -87,12 +87,10 @@ def changed_files() {
   def changes = "Changes:\n"
   build = currentBuild
   while(build != null) {
-    echo "changes in build: ${build.id}"
     changes += "In ${build.id}:\n"
     for (changeLog in build.changeSets) {
       for(entry in changeLog.items) {
         for(file in entry.affectedFiles) {
-          echo "change file: ${file.path}"
           changes += "* ${file.path}\n"
         }
       }
@@ -221,7 +219,7 @@ if( run_pipeline ) {
             secretEnvVar(key: 'KEYCLOAK_AUTH_AUDIENCE', secretName: 'apitest-secrets', secretKey: 'KEYCLOAK_AUTH_AUDIENCE'),
             secretEnvVar(key: 'KEYCLOAK_AUTH_CLIENT_SECRET', secretName: 'apitest-secrets', secretKey: 'KEYCLOAK_AUTH_CLIENT_SECRET'),
             secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN'),
-            secretEnvVar(key: 'ROCKETCHAT_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN'),
+            secretEnvVar(key: 'ROCKETCHAT_TOKEN', secretName: 'apitest-secrets', secretKey: 'ROCKETCHAT_TOKEN'),
         ]
       )
     ]
