@@ -188,10 +188,12 @@ if( run_pipeline ) {
   // create auth pod to run verification steps
   def pod_label = "auth-pod-${UUID.randomUUID().toString()}"
 
-  sh'''
-    pwd
-    ls -la
-  '''
+  stage('check path') {
+    sh'''
+      pwd
+      ls -la
+    '''
+  }
 
   // The jenkins-python3nodejs template has been purpose built for supporting SonarQube scanning.
   podTemplate(
