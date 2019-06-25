@@ -107,12 +107,12 @@ def changed_files() {
     for (changeLog in build.changeSets) {
       for(entry in changeLog.items) {
         for(file in entry.affectedFiles) {
+          echo "change file: ${file.path}"
           changes += "* ${file.path}\n"
         }
       }
     }
     build = build.previousBuild
-    echo "changes in build: ${build.id} ${build.result} "
   }
   return changes
 }
