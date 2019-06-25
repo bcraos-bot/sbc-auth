@@ -98,6 +98,25 @@ String getSonarQubePwd() {
 }
 
 @NonCPS
+def changed_files() {
+  def changes = "Changes:\n"
+  build = currentBuild
+  while(build != null && build.result != 'SUCCESS') {
+    changes += "In ${build.id}:\n"
+    for (changeLog in build.changeSets) {
+      for(entry in changeLog.items) {
+        for(file in entry.affectedFiles) {
+          changes += "* ${file.path}\n"
+        }
+      }
+    }
+    build = build.previousBuild
+  }
+  return changes
+}
+
+
+@NonCPS
 def triggerBuild(contextDirectory, frontendTypes, backendTypes) {
   // Determine if code has changed within the source context directory.
   def changeLogSets = currentBuild.changeSets
@@ -160,6 +179,9 @@ def triggerBuild(contextDirectory, frontendTypes, backendTypes) {
   return [filesChange,frontendChange,backendChange]
 }
 
+def changedFiles = changed_files()
+echo "changed files: ${changedFiles}"
+
 def buildResult = triggerBuild(CONTEXT_DIRECTORY, FRONTEND_FILE_TYPES, BACKEND_FILE_TYPES)
 
 echo "build result: ${buildResult}"
@@ -195,7 +217,7 @@ if( run_pipeline ) {
     cloud: 'openshift',
     containers: [
       containerTemplate(
-        name: 'python37',
+        name: 'python3',
         image: 'docker-registry.default.svc:5000/1rdehl-tools/jenkins-slave-python3:latest',
         resourceRequestCpu: '1000m',
         resourceLimitCpu: '2000m',
@@ -391,22 +413,25 @@ if( run_pipeline ) {
   //if (buildResult[1]) {
   // create NodeJS pod to run verification steps
   def nodejs_label = "jenkins-nodejs-${UUID.randomUUID().toString()}"
-  podTemplate(label: nodejs_label, name: nodejs_label, serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-    containerTemplate(
-      name: 'jnlp',
-      image: '172.50.0.2:5000/openshift/jenkins-slave-nodejs:8',
-      resourceRequestCpu: '500m',
-      resourceLimitCpu: '1000m',
-      resourceRequestMemory: '1Gi',
-      resourceLimitMemory: '2Gi',
-      workingDir: '/tmp/node',
-      command: '',
-      args: '${computer.jnlpmac} ${computer.name}',
-      envVars: [
-        secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
-      ]
-    )
-  ])
+  podTemplate(label: nodejs_label,
+              name: nodejs_label,
+              serviceAccount: 'jenkins',
+              cloud: 'openshift',
+              containers: [
+                containerTemplate(
+                  name: 'nodejs8',
+                  image: '172.50.0.2:5000/openshift/jenkins-slave-nodejs:8',
+                  resourceRequestCpu: '500m',
+                  resourceLimitCpu: '1000m',
+                  resourceRequestMemory: '1Gi',
+                  resourceLimitMemory: '2Gi',
+                  workingDir: '/tmp/node',
+                  command: '',
+                  args: '${computer.jnlpmac} ${computer.name}',
+                  envVars: [
+                    secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
+                  ])
+              ])
   {
     node (nodejs_label) {
       stage('Checkout Source') {
