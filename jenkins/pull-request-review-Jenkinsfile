@@ -274,7 +274,7 @@ if( run_pipeline ) {
 
             pullrequestStatus("${env.GITHUB_TOKEN}",
                               stage_status,
-                              "${env.BUILD_URL}" + "pylint/",n
+                              "${env.BUILD_URL}" + "pylint/",
                               'continuous-integration/pylint',
                               stage_description,
                               "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
