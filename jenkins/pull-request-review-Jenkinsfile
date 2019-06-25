@@ -10,6 +10,9 @@ def REPO_URL='https://github.com/pwei1018/sbc-auth.git'
 
 def GITHUB_API_URL='https://api.github.com/repos/pwei1018/sbc-auth'
 
+def ROCKETCHAT_CHANNEL='#registries-auth'
+def ROCKETCHAT_DEVELOPER_CHANNEL='#relationship-developers'
+
 def FRONTEND_DIRS = ['auth_web']
 def FRONTEND_FILE_TYPES = ['html', 'vue', 'ts', 'js']
 def BACKEND_DIRS = ['auth_api']
@@ -45,8 +48,9 @@ def pullrequestComment(token, pullRequestUrl, comments) {
 }
 
 
-def rocketChatComment(token, comments) {
-  def payload = JsonOutput.toJson([text: comments])
+def rocketChatComment(token, channel, comments) {
+  def payload = JsonOutput.toJson([text: comments,
+  channel: channel])
   def rocketChatUrl = "https://chat.pathfinder.gov.bc.ca/hooks/" + "${token}"
 
   sh(returnStdout: true,
@@ -219,7 +223,7 @@ if( run_pipeline ) {
             secretEnvVar(key: 'KEYCLOAK_AUTH_AUDIENCE', secretName: 'apitest-secrets', secretKey: 'KEYCLOAK_AUTH_AUDIENCE'),
             secretEnvVar(key: 'KEYCLOAK_AUTH_CLIENT_SECRET', secretName: 'apitest-secrets', secretKey: 'KEYCLOAK_AUTH_CLIENT_SECRET'),
             secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN'),
-            secretEnvVar(key: 'ROCKETCHAT_TOKEN', secretName: 'apitest-secrets', secretKey: 'ROCKETCHAT_TOKEN'),
+            secretEnvVar(key: 'ROCKETCHAT_TOKEN', secretName: 'apitest-secrets', secretKey: 'ROCKETCHAT_TOKEN')
         ]
       )
     ]
@@ -229,7 +233,7 @@ if( run_pipeline ) {
 
       pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
 
-      rocketChatComment("${ROCKETCHAT_TOKEN}", "Pull Request (${env.BRANCH_NAME}) Review start on " + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
+      rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review start on " + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
 
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
@@ -263,14 +267,14 @@ if( run_pipeline ) {
             echo "EXCEPTION: ${e}"
             stage_status = 'error'
             stage_description = 'Linter(pylint) check failed!'
-
+            rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pylint check failed!! " + "${env.BUILD_URL}" + "pylint/")
           } finally {
             def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
             publishIssues issues: [pyLint]
 
             pullrequestStatus("${env.GITHUB_TOKEN}",
                               stage_status,
-                              "${env.BUILD_URL}" + "pylint/",
+                              "${env.BUILD_URL}" + "pylint/",n
                               'continuous-integration/pylint',
                               stage_description,
                               "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
@@ -294,6 +298,8 @@ if( run_pipeline ) {
             stage_status = 'error'
             stage_description = 'Unit tests failed!'
             currentBuild.result = "FAILURE"
+
+            rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pytest failed!! " + "${env.BUILD_URL}" + "testReport/")
           } finally {
             junit 'pytest.xml'
 
@@ -329,7 +335,7 @@ if( run_pipeline ) {
                                 'Coverage succeeded!',
                                 "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
             } else {
-              rocketChatComment("${ROCKETCHAT_TOKEN}", "Pull Request (${env.BRANCH_NAME}) Review coverage check failed!! " + "${env.BUILD_URL}" + "cobertura/")
+              rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review coverage check failed!! " + "${env.BUILD_URL}" + "cobertura/")
 
               pullrequestStatus("${env.GITHUB_TOKEN}",
                                 "error",
@@ -367,7 +373,8 @@ if( run_pipeline ) {
         command: '',
         args: '${computer.jnlpmac} ${computer.name}',
         envVars: [
-          secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN')
+          secretEnvVar(key: 'GITHUB_TOKEN', secretName: 'apitest-secrets', secretKey: 'GITHUB_TOKEN'),
+          secretEnvVar(key: 'ROCKETCHAT_TOKEN', secretName: 'apitest-secrets', secretKey: 'ROCKETCHAT_TOKEN')
         ])
     ])
   {
@@ -395,6 +402,8 @@ if( run_pipeline ) {
               stage_status = 'error'
               stage_description = 'Unit tests(jest) failed!'
               currentBuild.result = "FAILURE"
+
+              rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review jest test failed!! " + "${env.BUILD_URL}")
             } else {
               stage_status = 'success'
               stage_description = 'Unit tests(jest) succeeded!'
@@ -413,17 +422,18 @@ if( run_pipeline ) {
             echo "Linter ran, returned ${lintResults}"
             if (lintResults > 0) {
               stage_status = 'error'
-              stage_description = 'linter(nodejs) check failed!'
+              stage_description = 'linter(vue) check failed!'
               currentBuild.result = "FAILURE"
+              rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review linter(vue) check failed!! " + "${env.BUILD_URL}")
             } else {
               stage_status = 'success'
-              stage_description = 'linter(nodejs) check succeeded!'
+              stage_description = 'linter(vue) check succeeded!'
             }
 
             pullrequestStatus("${env.GITHUB_TOKEN}",
                     stage_status,
                     "",
-                    'continuous-integration/linter(nodejs)',
+                    'continuous-integration/linter(vue)',
                     stage_description,
                     "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
           }
@@ -475,6 +485,7 @@ if( run_pipeline ) {
           stage_status = 'error'
           stage_description = 'Sonarqube scan failed!'
           currentBuild.result = "FAILURE"
+          rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review Sonarqube scan failed!! " + "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY})
         } finally {
           pullrequestStatus("${env.GITHUB_TOKEN}",
                     stage_status,
@@ -483,6 +494,8 @@ if( run_pipeline ) {
                     stage_description,
                     "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
         }
+
+        rocketChatComment("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "@here Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
       }
     }
   }
