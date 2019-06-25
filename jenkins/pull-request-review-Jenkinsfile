@@ -102,6 +102,7 @@ def changed_files() {
   def changes = "Changes:\n"
   build = currentBuild
   while(build != null && build.result != 'SUCCESS') {
+    echo 'changes in build: "${build.id}"'
     changes += "In ${build.id}:\n"
     for (changeLog in build.changeSets) {
       for(entry in changeLog.items) {
