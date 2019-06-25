@@ -188,13 +188,6 @@ if( run_pipeline ) {
   // create auth pod to run verification steps
   def pod_label = "auth-pod-${UUID.randomUUID().toString()}"
 
-  stage('check path') {
-    sh'''
-      pwd
-      ls -la
-    '''
-  }
-
   // The jenkins-python3nodejs template has been purpose built for supporting SonarQube scanning.
   podTemplate(
     label: pod_label,
@@ -225,11 +218,6 @@ if( run_pipeline ) {
     ]
   ){
     node(pod_label) {
-      sh'''
-        pwd
-        ls -la
-      '''
-
       def date = new Date()
 
       pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Pull Request Review Pipeline on ' + date.format('yyyy-MM-dd HH:mm:ss',TimeZone.getTimeZone('PST')))
@@ -421,11 +409,6 @@ if( run_pipeline ) {
   ])
   {
     node (nodejs_label) {
-      sh'''
-        pwd
-        ls -la
-      '''
-
       stage('Checkout Source') {
         echo "Checking out source code from pull request ..."
         //echo sh(returnStdout: true, script: 'env')
