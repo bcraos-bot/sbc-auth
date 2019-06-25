@@ -46,7 +46,7 @@ def pullrequestComment(token, pullRequestUrl, comments) {
 
 
 def rocketChatComment(token, comments) {
-  def payload = JsonOutput.toJson([body: comments])
+  def payload = JsonOutput.toJson([text: comments])
   def rocketChatUrl = "https://chat.pathfinder.gov.bc.ca/hooks/" + "${token}"
 
   sh(returnStdout: true,
