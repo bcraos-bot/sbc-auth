@@ -19,7 +19,6 @@ https://www.restapitutorial.com/httpstatuscodes.html
 Making it a little easier for those reading code, that don't have the table memorized.
 """
 
-
 def is_informational(code):
     """Return that the code is a provisional response."""
     return 100 <= code <= 199
