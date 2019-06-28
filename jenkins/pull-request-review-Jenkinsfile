@@ -26,6 +26,15 @@ def SONAR_PROJECT_NAME = 'BC Registries Auth'
 def SONAR_PROJECT_KEY = 'BCRegistriesAuth'
 def SONAR_PROJECT_BASE_DIR = '../'
 def SONAR_SOURCES = './'
+
+def API_LINTER_REPORT = 'api-linter'
+def API_UNITTEST_REPORT = 'api-unittest'
+def API_COVERAGE_REPORT = 'api-coverage'
+
+def UI_LINTER_REPORT = 'frontend-linter'
+def UI_UNITTEST_REPORT = 'frontend-jest'
+def UI_COVERAGE_REPORT = 'frontend-coverage'
+
 // ================================================================================================
 
 // define groovy functions
@@ -277,6 +286,8 @@ if( run_pipeline ) {
 
           } finally {
             //TODO Send result to sonarqube
+            stash name: API_LINTER_REPORT, includes: 'pylint.log'
+
             def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
             publishIssues issues: [pyLint]
 
@@ -309,6 +320,9 @@ if( run_pipeline ) {
 
             rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pytest failed!! " + "${env.BUILD_URL}" + "testReport/")
           } finally {
+            stash name: API_UNITTEST_REPORT, includes: 'pytest.xml'
+            stash name: API_COVERAGE_REPORT, includes: 'coverage.xml'
+
             //TODO Send result to sonarqube
             junit 'pytest.xml'
 
@@ -511,6 +525,10 @@ if( run_pipeline ) {
 
   node{
     stage("Quality Gate") {
+      unstash API_LINTER_REPORT
+      unstash API_UNITTEST_REPORT
+      unstash API_COVERAGE_REPORT
+
       // TODO
       // timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
       // def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
