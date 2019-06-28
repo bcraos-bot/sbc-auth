@@ -391,7 +391,7 @@ if( run_pipeline ) {
                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                 -Dsonar.projectBaseDir=${SONAR_PROJECT_BASE_DIR} \
                 -Dsonar.sources=${SONAR_SOURCES} \
-                -Dsonar.exclusions=${SONAR_PROJECT_BASE_DIR}auth-web/**/*
+                -Dsonar.exclusions=${SONAR_PROJECT_BASE_DIR}auth-web/**/* \
                 -Dsonar.python.coverage.reportPaths=${SONAR_PROJECT_BASE_DIR}auth-api/coverage.xml"
             )
           }
