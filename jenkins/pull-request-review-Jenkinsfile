@@ -433,7 +433,7 @@ if( run_pipeline ) {
   // trigger fronend review pipeline
   //if (buildResult[1]) {
   // create NodeJS pod to run verification steps
-  def nodejs_label = "jenkins-nodejs-${UUID.randomUUID().toString()}"
+  /*def nodejs_label = "jenkins-nodejs-${UUID.randomUUID().toString()}"
   podTemplate(
     label: nodejs_label,
     name: nodejs_label,
@@ -521,13 +521,18 @@ if( run_pipeline ) {
         }
       }
     }
-  }
+  }*/
 
   node{
     stage("Quality Gate") {
       unstash API_LINTER_REPORT
       unstash API_UNITTEST_REPORT
       unstash API_COVERAGE_REPORT
+
+      sh'''
+        pwd
+        ls -l
+      '''
 
       // TODO
       // timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
