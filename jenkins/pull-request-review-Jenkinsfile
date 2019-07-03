@@ -421,8 +421,7 @@ if( run_pipeline ) {
                 -Dsonar.exclusions='**/node_modules/**, **/coverage/**' \
                 -Dsonar.python.coverage.reportPaths=coverage.xml \
                 -Dsonar.tests=${SONAR_BACKEND_TESTS} \
-                -Dsonar.python.xunit.reportPath=pytest.xml "
-"
+                -Dsonar.python.xunit.reportPath=pytest.xml"
             )
           }
 
