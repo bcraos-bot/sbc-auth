@@ -419,9 +419,10 @@ if( run_pipeline ) {
                 -Dsonar.projectBaseDir=${SONAR_PROJECT_BACKEND_BASE_DIR} \
                 -Dsonar.sources=${SONAR_BACKEND_SOURCES} \
                 -Dsonar.exclusions='**/node_modules/**, **/coverage/**' \
-                -Dsonar.python.coverage.reportPaths=coverage.xml \
                 -Dsonar.tests=${SONAR_BACKEND_TESTS} \
-                -Dsonar.python.xunit.reportPath=pytest.xml"
+                -Dsonar.python.xunit.reportPath=pytest.xml \
+                -Dsonar.python.coverage.reportPaths=coverage.xml \
+                -Dsonar.python.pylint.reportPath=pylint.log"
             )
           }
 
