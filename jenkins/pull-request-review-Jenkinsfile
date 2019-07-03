@@ -466,7 +466,7 @@ if( run_pipeline ) {
 
             sh (
               returnStdout: true,
-              script: "./gradlew sonarqube --stacktrace --info \
+              script: "./gradlew sonarqube --full-stacktrace \
                 -Dsonar.verbose=true \
                 -Dsonar.host.url=${SONARQUBE_URL} \
                 -Dsonar.projectName='${sonarProjectName}' \
