@@ -455,16 +455,21 @@ if( run_pipeline ) {
             unstash API_UNITTEST_REPORT
             unstash API_COVERAGE_REPORT
 
+            def sonarProjectKey = "${SONAR_PROJECT_KEY}-${env.BRANCH_NAME}"
+
             sh (
               returnStdout: true,
               script: "./gradlew sonarqube --stacktrace --info \
                 -Dsonar.verbose=true \
                 -Dsonar.host.url=${SONARQUBE_URL} \
                 -Dsonar.projectName='${SONAR_PROJECT_NAME}' \
-                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                -Dsonar.projectKey=${sonarProjectKey} \
                 -Dsonar.projectBaseDir=${SONAR_PROJECT_BASE_DIR} \
-                -Dsonar.sources='auth-api/src' \
-                -Dsonar.python.xunit.reportPath=pytest.xml \
+                -Dsonar.sources='auth-api/src, auth-web/src' \
+                -Dsonar.exclusions='**/node_modules/**, **/coverage/**' \
+                -sonar.tests='auth-api/tests' \
+                -sonar.test.inclusions='**/tests/**' \
+                -Dsonar.testExecutionReportPaths=pytest.xml \
                 -Dsonar.python.coverage.reportPaths=coverage.xml"
             )
           }
