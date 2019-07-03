@@ -29,7 +29,7 @@ def SONAR_SOURCES = './'
 
 def SONAR_PROJECT_BACKEND_NAME = 'BC Registries Auth API'
 def SONAR_PROJECT_BACKEND_KEY = 'BCRegistriesAuthAPI'
-def SONAR_PROJECT_BACKEND_BASE_DIR = 'auth-api'
+def SONAR_PROJECT_BACKEND_BASE_DIR = '../auth-api'
 def SONAR_BACKEND_SOURCES = 'src'
 def SONAR_BACKEND_TESTS = 'tests'
 
