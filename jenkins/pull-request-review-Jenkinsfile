@@ -27,6 +27,12 @@ def SONAR_PROJECT_KEY = 'BCRegistriesAuth'
 def SONAR_PROJECT_BASE_DIR = '../'
 def SONAR_SOURCES = './'
 
+def SONAR_PROJECT_BACKEND_NAME = 'BC Registries Auth API'
+def SONAR_PROJECT_BACKEND_KEY = 'BCRegistriesAuthAPI'
+def SONAR_PROJECT_BACKEND_BASE_DIR = 'auth-api'
+def SONAR_BACKEND_SOURCES = 'src'
+def SONAR_BACKEND_TESTS = 'tests'
+
 def API_LINTER_REPORT = 'api-linter'
 def API_UNITTEST_REPORT = 'api-unittest'
 def API_COVERAGE_REPORT = 'api-coverage'
@@ -428,7 +434,7 @@ if( run_pipeline ) {
         }
       }
 
-      stage('SonarQube Analysis') {
+      stage('SonarQube Analysis - API') {
         echo "Performing static SonarQube code analysis ..."
 
         SONARQUBE_URL = getUrlForRoute(SONAR_ROUTE_NAME, SONAR_ROUTE_NAMESPACE).trim()
@@ -455,21 +461,21 @@ if( run_pipeline ) {
             unstash API_UNITTEST_REPORT
             unstash API_COVERAGE_REPORT
 
-            def sonarProjectKey = "${SONAR_PROJECT_KEY}-${env.BRANCH_NAME}"
+            def sonarProjectName = "${SONAR_PROJECT_BACKEND_NAME} - ${env.BRANCH_NAME}"
+            def sonarProjectKey = "${SONAR_PROJECT_BACKEND_KEY}-${env.BRANCH_NAME}"
 
             sh (
               returnStdout: true,
               script: "./gradlew sonarqube --stacktrace --info \
                 -Dsonar.verbose=true \
                 -Dsonar.host.url=${SONARQUBE_URL} \
-                -Dsonar.projectName='${SONAR_PROJECT_NAME}' \
+                -Dsonar.projectName='${sonarProjectName}' \
                 -Dsonar.projectKey=${sonarProjectKey} \
-                -Dsonar.projectBaseDir=${SONAR_PROJECT_BASE_DIR} \
-                -Dsonar.sources='auth-api/src, auth-web/src' \
+                -Dsonar.projectBaseDir=${SONAR_PROJECT_BACKEND_BASE_DIR} \
+                -Dsonar.sources=${SONAR_BACKEND_SOURCES} \
                 -Dsonar.exclusions='**/node_modules/**, **/coverage/**' \
-                -sonar.tests='auth-api/tests' \
-                -sonar.test.inclusions='**/tests/**' \
-                -Dsonar.testExecutionReportPaths=pytest.xml \
+                -Dsonar.sources=${SONAR_BACKEND_TESTS} \
+                -Dsonar.python.xunit.reportPath=pytest.xml \
                 -Dsonar.python.coverage.reportPaths=coverage.xml"
             )
           }
