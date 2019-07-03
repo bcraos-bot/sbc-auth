@@ -279,7 +279,7 @@ if( run_pipeline ) {
               #!/bin/bash
               source /opt/app-root/bin/activate
               export PYTHONPATH=./src/
-              pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint.log
+              pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint-report.txt
             '''
             stage_status = 'success'
             stage_description = 'Linter(pylint) check successed!'
@@ -292,9 +292,9 @@ if( run_pipeline ) {
 
           } finally {
             //TODO Send result to sonarqube
-            stash name: API_LINTER_REPORT, includes: 'pylint.log'
+            stash name: API_LINTER_REPORT, includes: 'pylint-report.txt'
 
-            def pyLint = scanForIssues tool: pyLint(pattern: 'pylint.log')
+            def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
             publishIssues issues: [pyLint]
 
             pullrequestStatus("${env.GITHUB_TOKEN}",
@@ -422,7 +422,7 @@ if( run_pipeline ) {
                 -Dsonar.tests=${SONAR_BACKEND_TESTS} \
                 -Dsonar.python.xunit.reportPath=pytest.xml \
                 -Dsonar.python.coverage.reportPaths=coverage.xml \
-                -Dsonar.python.pylint.reportPath=pylint.log"
+                -Dsonar.python.pylint.reportPath=pylint-report.txt"
             )
           }
 
