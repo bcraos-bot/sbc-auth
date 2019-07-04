@@ -296,7 +296,14 @@ if( run_pipeline ) {
           } finally {
             def flake8Result = sh (returnStdout: true,
                                    script: "cat flake8.txt")
-            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 :\n ' + "${flake8Result}")
+
+            def pep8 = scanForIssues tool: pep8(pattern: 'flake8.txt')
+            publishIssues issues: [pep8]
+
+            if (flake8Result.size > 0) {
+              pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 : ' + + "${env.BUILD_URL}" + "pep8/")
+            }
+
           }
         }
 
@@ -381,14 +388,18 @@ if( run_pipeline ) {
 
         def quality = jsonParse(qualityJson)
 
-        if (quality["projectStatus"]["status"] == 'OK') {
+        if (quality["projectStatus"]["status"] == 'OK' || quality["projectStatus"]["status"] == 'WARN') {
+
+          if (quality["projectStatus"]["status"] == 'WARN') {
+            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) quality check get Warning status!! Please check it out. " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}" )
+          }
           stage_status = 'success'
           stage_description = 'Quality check succeeded!'
           rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
         } else {
           stage_status = 'error'
           stage_description = 'Quality check failed!'
-          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}")
+          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}")
         }
 
         pullrequestStatus("${env.GITHUB_TOKEN}",
