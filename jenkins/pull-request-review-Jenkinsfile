@@ -295,12 +295,12 @@ if( run_pipeline ) {
             echo "EXCEPTION: ${e}"
           } finally {
             def flake8Result = sh (returnStdout: true,
-                                   script: "cat flake8.txt")
+                                   script: "cat flake8.txt").trim()
 
             def flake8 = scanForIssues tool: flake8(pattern: 'flake8.txt')
             publishIssues issues: [flake8]
 
-            if (flake8Result.size > 0) {
+            if (flake8Result.length() > 0) {
               pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 : ' + + "${env.BUILD_URL}" + "flake8/")
             }
 
