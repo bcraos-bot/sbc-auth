@@ -281,6 +281,25 @@ if( run_pipeline ) {
           pip install -r requirements/dev.txt
           export PYTHONPATH=./src/
         '''
+
+        stage('flake8') {
+          echo "flake8 checking..."
+          try{
+            sh '''
+              #!/bin/bash
+              source /opt/app-root/bin/activate
+              export PYTHONPATH=./src/
+              flake8 src/auth_api tests > flake8.txt
+            '''
+          } catch (Exception e) {
+            echo "EXCEPTION: ${e}"
+          } finally {
+            def flake8Result = sh (returnStdout: true,
+                                   script: "cat flake8.txt")
+            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 :\n ' + ${flake8Result})
+          }
+        }
+
         stage('pylint') {
           echo "pylint checking..."
           try{
@@ -290,32 +309,13 @@ if( run_pipeline ) {
               export PYTHONPATH=./src/
               pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint-report.txt
             '''
-
-            recordIssues aggregatingResults: true, enabledForFailure: true, healthy: 100, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [pyLint(pattern: 'pylint-report.txt')]
-
-            stage_status = 'success'
-            stage_description = 'Linter(pylint) check successed!'
           } catch (Exception e) {
             echo "EXCEPTION: ${e}"
-            currentBuild.result = "FAILURE"
-            stage_status = 'error'
-            stage_description = 'Linter(pylint) check failed!'
-            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pylint check failed!! " + "${env.BUILD_URL}" + "pylint/")
-
           } finally {
-            //TODO Send result to sonarqube
             stash name: API_LINTER_REPORT, includes: 'pylint-report.txt'
 
-            //def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
-            //publishIssues issues: [pyLint]
-
-            pullrequestStatus("${env.GITHUB_TOKEN}",
-                              stage_status,
-                              "${env.BUILD_URL}" + "pylint/",
-                              'continuous-integration/pylint',
-                              stage_description,
-                              "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-
+            def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
+            publishIssues issues: [pyLint]
           }
         }
 
@@ -393,8 +393,8 @@ if( run_pipeline ) {
 
         pullrequestStatus("${env.GITHUB_TOKEN}",
                           stage_status,
-                          "${sonarqubeUrl}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}",
-                          'continuous-integration/coverage',
+                          "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}",
+                          'continuous-integration/QualityCheck',
                           stage_description,
                           "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
       }
