@@ -316,64 +316,15 @@ if( run_pipeline ) {
               export PYTHONPATH=./src/
               pytest
             '''
-            stage_status = 'success'
-            stage_description = 'Unit tests successed!'
           } catch (Exception e) {
             echo "EXCEPTION: ${e}"
-            stage_status = 'error'
-            stage_description = 'Unit tests failed!'
-            currentBuild.result = "FAILURE"
-
-            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review pytest failed!! " + "${env.BUILD_URL}" + "testReport/")
           } finally {
             stash name: API_UNITTEST_REPORT, includes: 'pytest.xml'
             stash name: API_COVERAGE_REPORT, includes: 'coverage.xml'
 
-            //TODO Send result to sonarqube
             junit 'pytest.xml'
 
-            pullrequestStatus("${env.GITHUB_TOKEN}",
-                              stage_status,
-                              "${env.BUILD_URL}" + "testReport/",
-                              'continuous-integration/pytest',
-                              stage_description,
-                              "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-
-            //TODO Send result to sonarqube
-            cobertura(
-              coberturaReportFile: "coverage.xml",
-              onlyStable: false,
-              failNoReports: true,
-              failUnhealthy: false,
-              failUnstable: false,
-              autoUpdateHealth: true,
-              autoUpdateStability: true,
-              zoomCoverageChart: true,
-              maxNumberOfBuilds: 0,
-              lineCoverageTargets: '20, 20, 20',
-              conditionalCoverageTargets: '20, 20, 20',
-              classCoverageTargets: '20, 20, 20',
-              fileCoverageTargets: '20, 20, 20',
-            )
-
-            if (currentBuild.result == 'SUCCESS') {
-              pullrequestStatus("${env.GITHUB_TOKEN}",
-                                "success",
-                                "${env.BUILD_URL}" + "cobertura/",
-                                'continuous-integration/coverage',
-                                'Coverage succeeded!',
-                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-            } else {
-              rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review coverage check failed!! " + "${env.BUILD_URL}" + "cobertura/")
-
-              pullrequestStatus("${env.GITHUB_TOKEN}",
-                                "error",
-                                "${env.BUILD_URL}" + "cobertura/",
-                                'continuous-integration/coverage',
-                                'Coverage failed!',
-                                "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-            }
-
+            cobertura coberturaReportFile: 'coverage.xml'
           }
         }
       }
@@ -426,23 +377,37 @@ if( run_pipeline ) {
             )
           }
 
-          stage_status = 'success'
-          stage_description = 'Sonarqube scan succeeded!'
         } catch (Exception e) {
           echo "EXCEPTION: ${e}"
-          stage_status = 'error'
-          stage_description = 'Sonarqube scan failed!'
-          currentBuild.result = "FAILURE"
-          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review Sonarqube scan failed!! " + "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}")
-        } finally {
-          pullrequestStatus("${env.GITHUB_TOKEN}",
-                    stage_status,
-                    "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}",
-                    'continuous-integration/sonarqube',
-                    stage_description,
-                    "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
         }
       }
+
+      stage("Quality Gate") {
+        SONARQUBE_URL = getUrlForRoute(SONAR_ROUTE_NAME, SONAR_ROUTE_NAMESPACE).trim()
+        def sonarProjectKey = "${SONAR_PROJECT_BACKEND_KEY}-${env.BRANCH_NAME}"
+
+        def qualityJson = sh(returnStdout: true,
+                             script: "curl \"${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
+
+        def jsonSlurper = new JsonSlurper()
+        def quality = jsonSlurper.parseText(qualityGatesJson)
+
+        if (quality.projectStatus.status == 'OK') {
+          stage_status = 'success'
+          stage_description = 'Quality check succeeded!'
+          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
+        } else {
+          stage_status = 'error'
+          stage_description = 'Quality check failed!'
+          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}")
+        }
+
+        pullrequestStatus("${env.GITHUB_TOKEN}",
+                          stage_status,
+                          "${SONARQUBE_URL}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}",
+                          'continuous-integration/coverage',
+                          stage_description',
+                          "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
     }
   }
 
@@ -487,29 +452,7 @@ if( run_pipeline ) {
   }*/
 
   node{
-    stage("Quality Gate") {
-      unstash API_LINTER_REPORT
-      unstash API_UNITTEST_REPORT
-      unstash API_COVERAGE_REPORT
 
-      sh'''
-        pwd
-        ls -l
-      '''
-
-      // TODO
-      // timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
-      // def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
-      //  if (qg.status != 'OK') {
-      //    error "Pipeline aborted due to quality gate failure: ${qg.status}"
-      //  } else {
-      //    rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "@here Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
-      //  }
-      //}
-      echo currentBuild.result
-      ROCKETCHAT_TOKEN = sh (script: """oc get secret/apitest-secrets -o template --template="{{.data.ROCKETCHAT_TOKEN}}" | base64 --decode""", returnStdout: true).trim()
-      rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
-    }
   }
 
 }
