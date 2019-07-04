@@ -367,13 +367,14 @@ if( run_pipeline ) {
       }
 
       stage("Quality Gate - API") {
-        def qualityJson = sh(returnStdout: true,
+        def qualityJson = sh(returnStdout: false,
                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
+        echo qualityJson
 
         def jsonSlurper = new JsonSlurperClassic()
         def quality = jsonSlurper.parseText(qualityJson)
 
-        if (quality.projectStatus.status == 'OK') {
+        if (quality["projectStatus"]["status"] == 'OK') {
           stage_status = 'success'
           stage_description = 'Quality check succeeded!'
           rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
