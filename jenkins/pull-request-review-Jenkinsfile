@@ -296,7 +296,7 @@ if( run_pipeline ) {
           } finally {
             def flake8Result = sh (returnStdout: true,
                                    script: "cat flake8.txt")
-            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 :\n ' + ${flake8Result})
+            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 :\n ' + "${flake8Result}")
           }
         }
 
