@@ -370,7 +370,7 @@ if( run_pipeline ) {
         def qualityJson = sh(returnStdout: true,
                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
 
-        def jsonSlurper = new JsonSlurper()
+        def jsonSlurper = new JsonSlurperClassic()
         def quality = jsonSlurper.parseText(qualityJson)
 
         if (quality.projectStatus.status == 'OK') {
