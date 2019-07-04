@@ -366,7 +366,7 @@ if( run_pipeline ) {
                 -Dsonar.tests=${SONAR_BACKEND_TESTS} \
                 -Dsonar.python.xunit.reportPath=pytest.xml \
                 -Dsonar.python.coverage.reportPaths=coverage.xml \
-                -Dsonar.python.pylint.reportPath=pylint-report.txt"
+                -Dsonar.python.pylint.reportPath=pylint-report.txt "
             )
           }
 
