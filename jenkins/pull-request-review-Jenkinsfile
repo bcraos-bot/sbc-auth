@@ -297,7 +297,7 @@ if( run_pipeline ) {
             def flake8 = scanForIssues tool: flake8(pattern: 'flake8.txt')
             publishIssues issues: [flake8]
 
-            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 : ' + + "${env.BUILD_URL}" + "flake8/")
+            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", "Flake8 : " + "${env.BUILD_URL}" + "flake8/")
           }
         }
 
