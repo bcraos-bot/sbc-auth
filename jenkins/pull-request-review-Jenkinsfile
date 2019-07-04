@@ -387,7 +387,7 @@ if( run_pipeline ) {
                           stage_status,
                           "${sonarqubeUrl}" + "/dashboard?id=" + "${SONAR_PROJECT_KEY}",
                           'continuous-integration/coverage',
-                          stage_description',
+                          stage_description,
                           "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
     }
   }
