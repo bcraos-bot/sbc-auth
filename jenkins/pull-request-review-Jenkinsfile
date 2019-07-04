@@ -289,7 +289,7 @@ if( run_pipeline ) {
               #!/bin/bash
               source /opt/app-root/bin/activate
               export PYTHONPATH=./src/
-              flake8 src/auth_api tests > flake8.txt
+              flake8 src/auth_api tests --output-file=flake8.txt --exit-zero
             '''
           } catch (Exception e) {
             echo "EXCEPTION: ${e}"
@@ -297,11 +297,11 @@ if( run_pipeline ) {
             def flake8Result = sh (returnStdout: true,
                                    script: "cat flake8.txt")
 
-            def pep8 = scanForIssues tool: pep8(pattern: 'flake8.txt')
-            publishIssues issues: [pep8]
+            def flake8 = scanForIssues tool: flake8(pattern: 'flake8.txt')
+            publishIssues issues: [flake8]
 
             if (flake8Result.size > 0) {
-              pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 : ' + + "${env.BUILD_URL}" + "pep8/")
+              pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", 'Flake8 : ' + + "${env.BUILD_URL}" + "flake8/")
             }
 
           }
