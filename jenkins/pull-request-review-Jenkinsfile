@@ -76,6 +76,7 @@ def rocketChatNotificaiton(token, channel, comments) {
 @NonCPS
 def jsonParse(def json) {
     new groovy.json.JsonSlurperClassic().parseText(json)
+}
 
 // Gets the URL associated to a named route.
 // If you are attempting to access a route outside the local namespace (the namespace in which this script is running)
