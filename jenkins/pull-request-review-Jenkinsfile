@@ -389,6 +389,7 @@ if( run_pipeline ) {
                           'continuous-integration/coverage',
                           stage_description,
                           "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
+      }
     }
   }
 }
