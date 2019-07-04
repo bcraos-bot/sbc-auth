@@ -73,6 +73,10 @@ def rocketChatNotificaiton(token, channel, comments) {
      script: "curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatUrl}")
 }
 
+@NonCPS
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
+
 // Gets the URL associated to a named route.
 // If you are attempting to access a route outside the local namespace (the namespace in which this script is running)
 // The Jenkins service account from the local namespace will need 'view' access to the remote namespace.
@@ -374,8 +378,7 @@ if( run_pipeline ) {
                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
         echo qualityJson
 
-        def jsonSlurper = new JsonSlurperClassic()
-        def quality = jsonSlurper.parseText(qualityJson)
+        def quality = jsonParse(qualityJson)
 
         if (quality["projectStatus"]["status"] == 'OK') {
           stage_status = 'success'
