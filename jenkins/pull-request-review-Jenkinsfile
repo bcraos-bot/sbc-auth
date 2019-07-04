@@ -285,6 +285,9 @@ if( run_pipeline ) {
               export PYTHONPATH=./src/
               pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint-report.txt
             '''
+
+            recordIssues aggregatingResults: true, enabledForFailure: true, healthy: 100, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [pyLint(pattern: 'pylint-report.txt')]
+
             stage_status = 'success'
             stage_description = 'Linter(pylint) check successed!'
           } catch (Exception e) {
@@ -298,8 +301,8 @@ if( run_pipeline ) {
             //TODO Send result to sonarqube
             stash name: API_LINTER_REPORT, includes: 'pylint-report.txt'
 
-            def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
-            publishIssues issues: [pyLint]
+            //def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
+            //publishIssues issues: [pyLint]
 
             pullrequestStatus("${env.GITHUB_TOKEN}",
                               stage_status,
@@ -367,7 +370,7 @@ if( run_pipeline ) {
       }
 
       stage("Quality Gate - API") {
-        def qualityJson = sh(returnStdout: false,
+        def qualityJson = sh(returnStdout: true,
                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
         echo qualityJson
 
