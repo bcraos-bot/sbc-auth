@@ -32,7 +32,7 @@ def SONAR_PROJECT_BACKEND_KEY = 'BCRegistriesPayAPI'
 def SONAR_PROJECT_BACKEND_BASE_DIR = ['../pay-api', '../report_api']
 def SONAR_BACKEND_SOURCES = 'src'
 def SONAR_BACKEND_TESTS = 'tests'0
--0---0-00-=I9=======================89999=
+
 def API_LINTER_REPORT = 'api-linter'
 def API_UNITTEST_REPORT = 'api-unittest'
 def API_COVERAGE_REPORT = 'api-coverage'
