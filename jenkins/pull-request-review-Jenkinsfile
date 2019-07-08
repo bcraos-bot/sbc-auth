@@ -3,36 +3,36 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import groovy.json.*
 
-def APP_NAME = 'sbc-auth'
-def REPO_OWNER = 'pwei1018'
+def APP_NAME = 'sbc-pay'
+def REPO_OWNER = 'bcgov'
 def REPO_URL='https://github.com/' + REPO_OWNER + '/' + APP_NAME
 def GITHUB_API_URL='https://api.github.com/repos/' + REPO_OWNER + '/' + APP_NAME
 
-def ROCKETCHAT_CHANNEL='@patrick.wei'
-def ROCKETCHAT_DEVELOPER_CHANNEL='@patrick.wei'
+def ROCKETCHAT_CHANNEL='#registries-bot'
+def ROCKETCHAT_DEVELOPER_CHANNEL='#relationship-developers'
 def ROCKETCHAT_USER = [
   'patrick.wei': ['patrick.wei@gov.bc.ca']
 ]
 
 def CONTEXT_DIRECTORY = '/'
-def FRONTEND_DIRS = ['auth_web']
+def FRONTEND_DIRS = ['pay_ui']
 def FRONTEND_FILE_TYPES = ['html', 'vue', 'ts', 'js']
-def BACKEND_DIRS = ['auth_api']
+def BACKEND_DIRS = ['auth_api','report_api']
 def BACKEND_FILE_TYPES = ['py']
 
 def SONAR_ROUTE_NAME = 'sonarqube'
-def SONAR_ROUTE_NAMESPACE = '1rdehl-tools'
-def SONAR_PROJECT_NAME = 'BC Registries Auth'
-def SONAR_PROJECT_KEY = 'BCRegistriesAuth'
+def SONAR_ROUTE_NAMESPACE = 'l4ygcl-tools'
+def SONAR_PROJECT_NAME = 'BC Registries Payment'
+def SONAR_PROJECT_KEY = 'BCRegistriesPay'
 def SONAR_PROJECT_BASE_DIR = '../'
 def SONAR_SOURCES = './'
 
-def SONAR_PROJECT_BACKEND_NAME = 'BC Registries Auth API'
-def SONAR_PROJECT_BACKEND_KEY = 'BCRegistriesAuthAPI'
-def SONAR_PROJECT_BACKEND_BASE_DIR = '../auth-api'
+def SONAR_PROJECT_BACKEND_NAME = 'BC Registries Payment API'
+def SONAR_PROJECT_BACKEND_KEY = 'BCRegistriesPayAPI'
+def SONAR_PROJECT_BACKEND_BASE_DIR = ['../pay-api', '../report_api']
 def SONAR_BACKEND_SOURCES = 'src'
-def SONAR_BACKEND_TESTS = 'tests'
-
+def SONAR_BACKEND_TESTS = 'tests'0
+-0---0-00-=I9=======================89999=
 def API_LINTER_REPORT = 'api-linter'
 def API_UNITTEST_REPORT = 'api-unittest'
 def API_COVERAGE_REPORT = 'api-coverage'
@@ -273,136 +273,140 @@ if( run_pipeline ) {
 
       // trigger backend review pipeline
       //if (buildResult[2]) {
-      dir('auth-api') {
-        sh '''
-          #!/bin/bash
-          source /opt/app-root/bin/activate
-          pip install -r requirements.txt
-          pip install -r requirements/dev.txt
-          export PYTHONPATH=./src/
-        '''
+      BACKEND_DIRS.each {
+        def apiApp = "${it}"
+        def apiAppSrc = "src/"+ "${it}"
+        dir("${apiApp}") {
+          sh '''
+            #!/bin/bash
+            source /opt/app-root/bin/activate
+            pip install -r requirements.txt
+            pip install -r requirements/dev.txt
+            export PYTHONPATH=./src/
+          '''
 
-        stage('flake8') {
-          echo "flake8 checking..."
-          try{
-            sh '''
-              #!/bin/bash
-              source /opt/app-root/bin/activate
-              export PYTHONPATH=./src/
-              flake8 src/auth_api tests --output-file=flake8.txt --exit-zero
-            '''
+          stage('flake8') {
+            echo "flake8 checking..."
+            try{
+              sh '''
+                #!/bin/bash
+                source /opt/app-root/bin/activate
+                export PYTHONPATH=./src/
+                flake8 ${apiAppSrc} tests --output-file=flake8.txt --exit-zero
+              '''
+            } catch (Exception e) {
+              echo "EXCEPTION: ${e}"
+            } finally {
+              def flake8 = scanForIssues tool: flake8(pattern: 'flake8.txt')
+              publishIssues issues: [flake8]
+
+              pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", "Flake8 : " + "${env.BUILD_URL}" + "flake8/")
+            }
+          }
+
+          stage('pylint') {
+            echo "pylint checking..."
+            try{
+              sh '''
+                #!/bin/bash
+                source /opt/app-root/bin/activate
+                export PYTHONPATH=./src/
+                pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 ${apiAppSrc} --exit-zero --output-format=parseable > pylint-report.txt
+              '''
+            } catch (Exception e) {
+              echo "EXCEPTION: ${e}"
+            } finally {
+              stash name: API_LINTER_REPORT, includes: 'pylint-report.txt'
+
+              def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
+              publishIssues issues: [pyLint]
+            }
+          }
+
+          stage('Unit tests(pytest) & Coverage') {
+            echo "testing..."
+            try{
+              sh '''
+                #!/bin/bash
+                source /opt/app-root/bin/activate
+                export PYTHONPATH=./src/
+                pytest
+              '''
+            } catch (Exception e) {
+              echo "EXCEPTION: ${e}"
+            } finally {
+              stash name: API_UNITTEST_REPORT, includes: 'pytest.xml'
+              stash name: API_COVERAGE_REPORT, includes: 'coverage.xml'
+
+              junit 'pytest.xml'
+
+              cobertura coberturaReportFile: 'coverage.xml'
+            }
+          }
+        }
+        //}
+      /*
+        stage('SonarQube Analysis - API') {
+          echo "Performing static SonarQube code analysis ..."
+
+          echo "URL: ${sonarqubeUrl}"
+
+          try {
+            dir('sonar-runner') {
+              unstash API_LINTER_REPORT
+              unstash API_UNITTEST_REPORT
+              unstash API_COVERAGE_REPORT
+
+              sh (
+                returnStdout: true,
+                script: "./gradlew sonarqube --full-stacktrace \
+                  -Dsonar.verbose=true \
+                  -Dsonar.host.url=${sonarqubeUrl} \
+                  -Dsonar.projectName='${sonarProjectName}' \
+                  -Dsonar.projectKey=${sonarProjectKey} \
+                  -Dsonar.projectBaseDir=${SONAR_PROJECT_BACKEND_BASE_DIR} \
+                  -Dsonar.sources=${SONAR_BACKEND_SOURCES} \
+                  -Dsonar.tests=${SONAR_BACKEND_TESTS} \
+                  -Dsonar.python.xunit.reportPath=pytest.xml \
+                  -Dsonar.python.coverage.reportPaths=coverage.xml \
+                  -Dsonar.python.pylint.reportPath=pylint-report.txt "
+              )
+            }
+
           } catch (Exception e) {
             echo "EXCEPTION: ${e}"
-          } finally {
-            def flake8 = scanForIssues tool: flake8(pattern: 'flake8.txt')
-            publishIssues issues: [flake8]
-
-            pullrequestComment("${GITHUB_TOKEN}", "${GITHUB_API_URL}" + "/issues/${env.CHANGE_ID}/comments", "Flake8 : " + "${env.BUILD_URL}" + "flake8/")
           }
         }
 
-        stage('pylint') {
-          echo "pylint checking..."
-          try{
-            sh '''
-              #!/bin/bash
-              source /opt/app-root/bin/activate
-              export PYTHONPATH=./src/
-              pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/auth_api --exit-zero --output-format=parseable > pylint-report.txt
-            '''
-          } catch (Exception e) {
-            echo "EXCEPTION: ${e}"
-          } finally {
-            stash name: API_LINTER_REPORT, includes: 'pylint-report.txt'
+        stage("Quality Gate - API") {
+          def qualityJson = sh(returnStdout: true,
+                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
+          echo qualityJson
 
-            def pyLint = scanForIssues tool: pyLint(pattern: 'pylint-report.txt')
-            publishIssues issues: [pyLint]
-          }
-        }
+          def quality = jsonParse(qualityJson)
 
-        stage('Unit tests(pytest) & Coverage') {
-          echo "testing..."
-          try{
-            sh '''
-              #!/bin/bash
-              source /opt/app-root/bin/activate
-              export PYTHONPATH=./src/
-              pytest
-            '''
-          } catch (Exception e) {
-            echo "EXCEPTION: ${e}"
-          } finally {
-            stash name: API_UNITTEST_REPORT, includes: 'pytest.xml'
-            stash name: API_COVERAGE_REPORT, includes: 'coverage.xml'
+          if (quality["projectStatus"]["status"] == 'OK' || quality["projectStatus"]["status"] == 'WARN') {
 
-            junit 'pytest.xml'
-
-            cobertura coberturaReportFile: 'coverage.xml'
-          }
-        }
-      }
-      //}
-
-      stage('SonarQube Analysis - API') {
-        echo "Performing static SonarQube code analysis ..."
-
-        echo "URL: ${sonarqubeUrl}"
-
-        try {
-          dir('sonar-runner') {
-            unstash API_LINTER_REPORT
-            unstash API_UNITTEST_REPORT
-            unstash API_COVERAGE_REPORT
-
-            sh (
-              returnStdout: true,
-              script: "./gradlew sonarqube --full-stacktrace \
-                -Dsonar.verbose=true \
-                -Dsonar.host.url=${sonarqubeUrl} \
-                -Dsonar.projectName='${sonarProjectName}' \
-                -Dsonar.projectKey=${sonarProjectKey} \
-                -Dsonar.projectBaseDir=${SONAR_PROJECT_BACKEND_BASE_DIR} \
-                -Dsonar.sources=${SONAR_BACKEND_SOURCES} \
-                -Dsonar.tests=${SONAR_BACKEND_TESTS} \
-                -Dsonar.python.xunit.reportPath=pytest.xml \
-                -Dsonar.python.coverage.reportPaths=coverage.xml \
-                -Dsonar.python.pylint.reportPath=pylint-report.txt "
-            )
+            if (quality["projectStatus"]["status"] == 'WARN') {
+              rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) quality check get Warning status!! Please check it out. " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}" )
+            }
+            stage_status = 'success'
+            stage_description = 'Quality check succeeded!'
+            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
+          } else {
+            stage_status = 'error'
+            stage_description = 'Quality check failed!'
+            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}")
           }
 
-        } catch (Exception e) {
-          echo "EXCEPTION: ${e}"
+          pullrequestStatus("${env.GITHUB_TOKEN}",
+                            stage_status,
+                            "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}",
+                            'continuous-integration/QualityCheck',
+                            stage_description,
+                            "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
         }
-      }
-
-      stage("Quality Gate - API") {
-        def qualityJson = sh(returnStdout: true,
-                             script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
-        echo qualityJson
-
-        def quality = jsonParse(qualityJson)
-
-        if (quality["projectStatus"]["status"] == 'OK' || quality["projectStatus"]["status"] == 'WARN') {
-
-          if (quality["projectStatus"]["status"] == 'WARN') {
-            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) quality check get Warning status!! Please check it out. " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}" )
-          }
-          stage_status = 'success'
-          stage_description = 'Quality check succeeded!'
-          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
-        } else {
-          stage_status = 'error'
-          stage_description = 'Quality check failed!'
-          rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}")
-        }
-
-        pullrequestStatus("${env.GITHUB_TOKEN}",
-                          stage_status,
-                          "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}",
-                          'continuous-integration/QualityCheck',
-                          stage_description,
-                          "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-      }
+      }*/
     }
   }
 }
