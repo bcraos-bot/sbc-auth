@@ -405,8 +405,8 @@ if( run_pipeline ) {
                             'continuous-integration/QualityCheck',
                             stage_description,
                             "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
-        }
-      }*/
+        }*/
+      }
     }
   }
 }
